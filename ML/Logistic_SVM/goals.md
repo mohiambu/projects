@@ -2,13 +2,13 @@ This project builds two types of Machine Learning Algorithms which are logistic 
 
 
 
-#Project Goal
+# Project Goal
 
 - Preprocesses raw text data (cleaning, tokenization, stemming, etc.)
-- Converts text into numerical features using CountVectorizer - TF-IDF (CountVectorization worked better than TF-IDF for the reviews)
+- Converts text into numerical features using CountVectorizer - TF-IDF (CountVectorization worked better than TF-IDF for classifying the reviews)
 - Trains and compares multiple ML models (Logistic Regression, SVM)
-- Evaluates model performance with real metrics
-- Accepts custom user input for predictions
+- Evaluates model performance 
+- For Fun: try to write a review and the model will try to predict wether the review was positive or negative
 
 
 
