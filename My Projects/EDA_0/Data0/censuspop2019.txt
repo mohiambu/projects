@@ -1,0 +1,105 @@
+"NAME" "GEOID" "variable" "value"
+"Alabama" "01" "POP" 4903185
+"Alaska" "02" "POP" 731545
+"Arizona" "04" "POP" 7278717
+"Arkansas" "05" "POP" 3017804
+"California" "06" "POP" 39512223
+"Colorado" "08" "POP" 5758736
+"Delaware" "10" "POP" 973764
+"District of Columbia" "11" "POP" 705749
+"Connecticut" "09" "POP" 3565287
+"Florida" "12" "POP" 21477737
+"Georgia" "13" "POP" 10617423
+"Idaho" "16" "POP" 1787065
+"Hawaii" "15" "POP" 1415872
+"Illinois" "17" "POP" 12671821
+"Indiana" "18" "POP" 6732219
+"Iowa" "19" "POP" 3155070
+"Kansas" "20" "POP" 2913314
+"Kentucky" "21" "POP" 4467673
+"Louisiana" "22" "POP" 4648794
+"Maine" "23" "POP" 1344212
+"Maryland" "24" "POP" 6045680
+"Massachusetts" "25" "POP" 6892503
+"Michigan" "26" "POP" 9986857
+"Minnesota" "27" "POP" 5639632
+"Mississippi" "28" "POP" 2976149
+"Missouri" "29" "POP" 6137428
+"Montana" "30" "POP" 1068778
+"Nebraska" "31" "POP" 1934408
+"Nevada" "32" "POP" 3080156
+"New Hampshire" "33" "POP" 1359711
+"New Jersey" "34" "POP" 8882190
+"New Mexico" "35" "POP" 2096829
+"New York" "36" "POP" 19453561
+"North Carolina" "37" "POP" 10488084
+"North Dakota" "38" "POP" 762062
+"Ohio" "39" "POP" 11689100
+"Oklahoma" "40" "POP" 3956971
+"Oregon" "41" "POP" 4217737
+"Pennsylvania" "42" "POP" 12801989
+"Rhode Island" "44" "POP" 1059361
+"South Carolina" "45" "POP" 5148714
+"South Dakota" "46" "POP" 884659
+"Tennessee" "47" "POP" 6829174
+"Texas" "48" "POP" 28995881
+"Vermont" "50" "POP" 623989
+"Utah" "49" "POP" 3205958
+"Virginia" "51" "POP" 8535519
+"Washington" "53" "POP" 7614893
+"West Virginia" "54" "POP" 1792147
+"Wisconsin" "55" "POP" 5822434
+"Wyoming" "56" "POP" 578759
+"Puerto Rico" "72" "POP" 3193694
+"Alabama" "01" "DENSITY" 96.811652435
+"Alaska" "02" "DENSITY" 1.281126592
+"Arizona" "04" "DENSITY" 64.043251752
+"Arkansas" "05" "DENSITY" 57.992836305
+"California" "06" "DENSITY" 253.52068818
+"Colorado" "08" "DENSITY" 55.566142837
+"Delaware" "10" "DENSITY" 499.74775877
+"District of Columbia" "11" "DENSITY" 11543.999939
+"Connecticut" "09" "DENSITY" 736.22104642
+"Florida" "12" "DENSITY" 400.34642766
+"Georgia" "13" "DENSITY" 183.95873142
+"Idaho" "16" "DENSITY" 21.623354888
+"Hawaii" "15" "DENSITY" 220.45750094
+"Illinois" "17" "DENSITY" 228.26467808
+"Indiana" "18" "DENSITY" 187.91203111
+"Iowa" "19" "DENSITY" 56.48808963
+"Kansas" "20" "DENSITY" 35.633173473
+"Kentucky" "21" "DENSITY" 113.13031412
+"Louisiana" "22" "DENSITY" 107.59979292
+"Maine" "23" "DENSITY" 43.579859409
+"Maryland" "24" "DENSITY" 622.55125026
+"Massachusetts" "25" "DENSITY" 883.54570363
+"Michigan" "26" "DENSITY" 176.4277398
+"Minnesota" "27" "DENSITY" 70.826623512
+"Mississippi" "28" "DENSITY" 63.422797317
+"Missouri" "29" "DENSITY" 89.277578164
+"Montana" "30" "DENSITY" 7.3431452165
+"Nebraska" "31" "DENSITY" 25.18219543
+"Nevada" "32" "DENSITY" 28.037006365
+"New Hampshire" "33" "DENSITY" 151.8653269
+"New Jersey" "34" "DENSITY" 1207.6722171
+"New Mexico" "35" "DENSITY" 17.284562099
+"New York" "36" "DENSITY" 412.81842864
+"North Carolina" "37" "DENSITY" 215.71420423
+"North Dakota" "38" "DENSITY" 11.045213462
+"Ohio" "39" "DENSITY" 286.08552119
+"Oklahoma" "40" "DENSITY" 57.685202577
+"Oregon" "41" "DENSITY" 43.940251292
+"Pennsylvania" "42" "DENSITY" 286.13105806
+"Rhode Island" "44" "DENSITY" 1024.6267288
+"South Carolina" "45" "DENSITY" 171.26007636
+"South Dakota" "46" "DENSITY" 11.669470806
+"Tennessee" "47" "DENSITY" 165.60404231
+"Texas" "48" "DENSITY" 110.9834667
+"Vermont" "50" "DENSITY" 67.693332663
+"Utah" "49" "DENSITY" 38.918176132
+"Virginia" "51" "DENSITY" 216.18675868
+"Washington" "53" "DENSITY" 114.58700852
+"West Virginia" "54" "DENSITY" 74.545048061
+"Wisconsin" "55" "DENSITY" 107.48955424
+"Wyoming" "56" "DENSITY" 5.9611363253
+"Puerto Rico" "72" "DENSITY" NA

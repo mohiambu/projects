@@ -1,0 +1,53 @@
+"GEOID" "NAME" "variable" "value"
+"01" "Alabama" "P001001" 4779736
+"02" "Alaska" "P001001" 710231
+"04" "Arizona" "P001001" 6392017
+"05" "Arkansas" "P001001" 2915918
+"06" "California" "P001001" 37253956
+"22" "Louisiana" "P001001" 4533372
+"21" "Kentucky" "P001001" 4339367
+"08" "Colorado" "P001001" 5029196
+"09" "Connecticut" "P001001" 3574097
+"10" "Delaware" "P001001" 897934
+"11" "District of Columbia" "P001001" 601723
+"12" "Florida" "P001001" 18801310
+"13" "Georgia" "P001001" 9687653
+"15" "Hawaii" "P001001" 1360301
+"16" "Idaho" "P001001" 1567582
+"17" "Illinois" "P001001" 12830632
+"18" "Indiana" "P001001" 6483802
+"19" "Iowa" "P001001" 3046355
+"20" "Kansas" "P001001" 2853118
+"23" "Maine" "P001001" 1328361
+"24" "Maryland" "P001001" 5773552
+"25" "Massachusetts" "P001001" 6547629
+"26" "Michigan" "P001001" 9883640
+"27" "Minnesota" "P001001" 5303925
+"28" "Mississippi" "P001001" 2967297
+"29" "Missouri" "P001001" 5988927
+"30" "Montana" "P001001" 989415
+"31" "Nebraska" "P001001" 1826341
+"32" "Nevada" "P001001" 2700551
+"33" "New Hampshire" "P001001" 1316470
+"34" "New Jersey" "P001001" 8791894
+"35" "New Mexico" "P001001" 2059179
+"36" "New York" "P001001" 19378102
+"37" "North Carolina" "P001001" 9535483
+"38" "North Dakota" "P001001" 672591
+"39" "Ohio" "P001001" 11536504
+"40" "Oklahoma" "P001001" 3751351
+"41" "Oregon" "P001001" 3831074
+"42" "Pennsylvania" "P001001" 12702379
+"44" "Rhode Island" "P001001" 1052567
+"45" "South Carolina" "P001001" 4625364
+"46" "South Dakota" "P001001" 814180
+"47" "Tennessee" "P001001" 6346105
+"48" "Texas" "P001001" 25145561
+"49" "Utah" "P001001" 2763885
+"50" "Vermont" "P001001" 625741
+"51" "Virginia" "P001001" 8001024
+"53" "Washington" "P001001" 6724540
+"54" "West Virginia" "P001001" 1852994
+"55" "Wisconsin" "P001001" 5686986
+"56" "Wyoming" "P001001" 563626
+"72" "Puerto Rico" "P001001" 3725789
