@@ -1,0 +1,294 @@
+---
+title: "EDA_Project_PDF"
+output: pdf_document
+date: "2025-10-23"
+---
+
+
+# Executive summary 
+
+From 1975 to 2019 the house prices have risen generally in the US (after adjusting for inflation). But the amount of growth varies a lot by regions and states. Areas that have a faster population growth or higher population density usually tend to have a stronger housing price increase.
+
+Also, the West (like California and Washington) and the South (like Florida and Texas) have the strongest growth in house prices because a lot of people have moved there, which raised the demand for houses. Moreover, regions like the Midwest stayed steady with small changes, and the Northeast grew slowly. 
+
+The period of time 2000-2010 broke the pattern temporarily due to the 2008 housing crash. During that time, house prices fell down everywhere, even in fast growing states like California.  But in 2010-2019 the link between population and housing prices became strong again, especially in states with a booming population. 
+
+The biggest change in real house prices happened in the District of Columbia, where prices rose by almost +296%, showing very strong growth over time. On the other hand, West Virginia saw the largest drop, with prices falling by about –32%. This shows how uneven housing trends can be across states.
+
+Overall, when more people move to a certain state, housing demand goes up and prices rise. Population growth plays a big role in how much house prices change over time.
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+cb_palette <- c("#999999", "#E69F00", "#56B4E9", "#009E73",
+               "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+```
+
+
+
+
+```{r, echo = FALSE}
+cpi <- read.csv("cpi.csv")
+state_abbrevs <- read.table("state_abbrevs.txt", header = TRUE)
+State_and_US_SA <- read_excel("State_and_US_SA.xls", skip = 5)
+
+censuspop2000 <- read.table("censuspop2000.txt", header = TRUE)
+censuspop2010 <- read.table("censuspop2010.txt", header = TRUE)
+censuspop2019 <- read.table("censuspop2019.txt", header = TRUE)
+```
+
+
+```{r,echo = FALSE}
+State_and_US_SA <- State_and_US_SA[1:(nrow(State_and_US_SA)-16),]
+```
+
+```{r,echo = FALSE}
+State_and_US_SA <- State_and_US_SA |> separate(Month,into = c("Year","Month"), sep = 4, remove = TRUE)
+State_and_US_SA <- State_and_US_SA |> mutate(AK = as.numeric(AK))
+State_and_US_SA <- State_and_US_SA |>dplyr::select(-`United States seasonally adjusted`)
+```
+
+```{r,echo = FALSE}
+State.df <- State_and_US_SA |>
+  pivot_longer(cols = -c(Year, Month),names_to = "Code",values_to = "HPI")
+```
+
+```{r,echo = FALSE}
+State.df <- left_join(State.df,state_abbrevs,by = "Code")
+```
+
+```{r,echo = FALSE, message=FALSE}
+Annual_HPI <- State.df |> group_by(Year,State,Region) |> summarise(MeanHPI = mean(HPI))
+```
+
+```{r,echo = FALSE}
+Annual_CPI <- cpi |> dplyr::filter(Year > 1974) |> group_by(Year) |> summarise(MeanCPI = mean(Value))
+```
+
+```{r,echo = FALSE}
+base_cpi <- Annual_CPI %>% filter(Year == 2000) %>% pull(MeanCPI)
+Annual_CPI <- Annual_CPI %>%
+  mutate(CPI2000 = 100 * MeanCPI / base_cpi)
+```
+
+```{r,echo = FALSE}
+Annual_HPI <- Annual_HPI |> mutate(Year = as.integer(Year))
+```
+
+```{r,echo = FALSE}
+
+Real_HPI <- Annual_HPI |> left_join(Annual_CPI, by = "Year") |> mutate(RealHPI = MeanHPI / (CPI2000 / 100))
+
+```
+
+```{r,echo = FALSE}
+ggplot(Real_HPI, aes(x = Year,y =RealHPI, group = State)) +geom_line(alpha = 0.35) +
+  facet_wrap(~ Region, ncol = 2,scales = "free_y") +
+  labs(title = "Figure 1: Real House Price Index by Region (1975–2019)",x = "Year", y = "Real House Price Index")
+```
+
+
+## Real House Price Trends Across U.S. Regions, 1975–2019
+
+Figure 1 shows how real house prices (after adjusting for inflation) have changed over time across the four U.S. regions. Each panel represents a region and the individual lines show a state level trend. All regions showed a similar cycle where prices were steady in the late 1970s, then dropped in the early 1980s, then went slowly up during the 1990s and rose significantly until 2007, then fell down during the housing crash in 2008, then started rising again after 2012. The West and Northeast both had the most significant fluctuation in real house prices over time, which means their house prices were the most unstable in the nation. The Midwest had the least changes in real house prices and stayed steady most of the time. The South shows a strong increase after 2010. Overall, all regions show a similar pattern, but some area's real house prices fluctuated more than others. 
+
+Real house price changes vary a lot across states from 1975 to 2019. The District of Columbia showed the biggest increase (+296%). While West Virginia showed the largest decrease (-32%). Overall, real house prices in the United States have increased. However, the amount of growth depends a lot on the state and the region where some Western states and DC were rising much faster than other states. 
+
+
+
+
+```{r,echo = FALSE}
+# real house price index by state: 
+#ggplot(Real_HPI, aes(Year, RealHPI, group = State)) +
+  #geom_line(alpha = 0.5, color = "steelblue") +
+  #facet_wrap(~State, ncol = 8, scales = "free_y") +
+  #labs(title = "Real House Price Index by State",
+       #x = "Year", y = "Real House Price Index")+theme(strip.text = element_text(size = 7),axis.text.x = element_text(size = 5,angle = 90),axis.text.y = element_text(size = 5))
+```
+
+```{r,echo = FALSE}
+state_change <- Real_HPI |>
+  group_by(State,Region) |>
+  summarise(HPI_1975 = RealHPI[Year == 1975],HPI_2019 = RealHPI[Year == 2019],pct_change_75_19 = 100*(HPI_2019 - HPI_1975) / HPI_1975,.groups = "drop")
+
+max_state <- state_change |>
+  filter(pct_change_75_19 == max(pct_change_75_19))
+
+min_state <- state_change |>
+  filter(pct_change_75_19 == min(pct_change_75_19))
+
+#max_state   # biggest increase
+#min_state   # biggest decrease
+```
+
+
+
+```{r,echo = FALSE}
+pop2019 <- censuspop2019 |> dplyr::filter(variable == "DENSITY") |> dplyr::select(State = NAME, Density2019 =value)
+#head(pop2019)
+```
+
+```{r,echo = FALSE}
+merged <- state_change |> left_join(pop2019, by = "State")
+```
+
+```{r,echo = FALSE}
+merged <- merged |>
+  dplyr::select(State, Region, pct_change_75_19, Density2019)
+
+```
+
+```{r,echo = FALSE, message = FALSE}
+ggplot(merged, aes(x = Density2019, y = pct_change_75_19, color = Region)) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_log10() + scale_color_manual(values = cb_palette) +
+  labs(title = "Figure 2: Population Density (2019) vs Real House Price Change (1975–2019)",x = "Logged Population Density",y = "% Change in Real HPI (1975–2019)")
+
+```
+
+
+## Population Density and House Price Growth Across Regions
+
+In Figure 2, we can see that most regions show the same pattern. The West shows a strong positive relationship between population density and house price growth. The Northeast shows a moderate positive relationship, and the Midwest shows no relationship at all. The South looks very different because of the District of Columbia. DC is an extreme outlier because it has an extremely high density and a very high increase in real house prices. This point makes the trend line go upward and makes it look like the region has a much stronger relationship than it actually does. 
+
+
+```{r,echo = FALSE}
+newMerged <- merged |> dplyr::filter(State != "District of Columbia") 
+```
+
+```{r,echo = FALSE, message = FALSE}
+ggplot(newMerged, aes(x = Density2019, y = pct_change_75_19, color = Region)) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_log10() + scale_color_manual(values = cb_palette)+
+  labs(title = "Figure 3: Population Density (2019) vs Real House Price Change (1975–2019)",x = "Logged Population Density",y = "% Change in Real HPI (1975–2019)") 
+```
+
+In Figure 3, DC is removed so the pattern is easier to see. After removing DC we can see that the south line becomes moderately positive and fits the other states perfectly in the region. 
+
+
+Overall, states with higher density tend to have a bigger increase in real house prices, but the pattern differs across the regions. Washington DC is a clear outlier because it is much denser than any southern state, and it has a very large population growth. So there is a good reason to remove it. After removing DC, the relationship in the south becomes clearer. The West shows a strong positive pattern, the Northeast and South show moderate positive patterns and the Midwest shows almost no relationship. So overall population density does help explain house price changes but only after handling extreme outliers. 
+
+```{r,echo = FALSE, message = FALSE, warning=FALSE}
+nominal <- read_csv("nhgis0003_ts_nominal_state.csv")
+```
+
+
+
+```{r,echo = FALSE}
+pop1990 <- pop1990 <- nominal |> dplyr::filter(YEAR == 1990) |> select(State = STATE, POP1990 = A00AA)
+```
+
+
+
+```{r,echo = FALSE}
+pop2000 <- censuspop2000 |> dplyr::select(State = NAME, Pop2000 = value) |> dplyr::filter(State != "Puerto Rico")
+pop2010 <- censuspop2010|> dplyr::select(State = NAME, Pop2010 = value) |> dplyr::filter(State != "Puerto Rico")
+pop2019 <- censuspop2019 |> dplyr::filter(variable == "POP") |> dplyr::select(State = NAME, Pop2019 = value) |>  filter(State != "Puerto Rico")
+
+```
+
+```{r,echo = FALSE}
+pop <- pop1990 |> left_join(pop2000, by = "State") |>left_join(pop2010, by = "State") |> left_join(pop2019, by = "State")
+```
+
+```{r,echo = FALSE}
+pop_diff <- pop |>
+  mutate(diff_90_00 = (Pop2000 - POP1990)/ POP1990,
+         diff_00_10 = (Pop2010 - Pop2000) / Pop2000,
+         diff_10_19 = (Pop2019 - Pop2010) / Pop2010)
+```
+
+```{r,echo = FALSE}
+HPI_90_00_10_19 <- Real_HPI |>
+  filter(Year %in% c(1990,2000, 2010, 2019)) |>
+  group_by(State, Region) |>
+  summarise(HPI1990 = RealHPI[Year == 1990]
+            ,HPI2000 = RealHPI[Year == 2000]
+            ,HPI2010 = RealHPI[Year == 2010]
+            ,HPI2019 = RealHPI[Year == 2019],
+            .groups = "drop")
+
+```
+
+```{r,echo = FALSE}
+HPI_00_10_19 <- HPI_90_00_10_19 |>
+  mutate(
+    HPI_change_90_00 = 100 * (HPI2000 - HPI1990) / HPI1990,
+    HPI_change_00_10 = 100 * (HPI2010 - HPI2000) / HPI2000,
+    HPI_change_10_19 = 100 * (HPI2019 - HPI2010) / HPI2010)
+```
+
+```{r,echo = FALSE}
+MM <- HPI_00_10_19 |> left_join(pop_diff, by = "State") |> dplyr::filter(State != "District of Columbia") 
+```
+
+
+```{r,echo = FALSE, message = FALSE}
+ggplot(MM, aes(x = diff_90_00, y = HPI_change_90_00, color = Region)) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", se = FALSE) + scale_color_manual(values = cb_palette)+
+  labs(title = "Figure 4:Population vs Real House Price Change (1990–2000)",
+       x = "% Population Change", y = "% Real HPI Change")
+```
+
+
+## Population Growth and House Price Changes by Region (1990–2000)
+
+Figure 4 shows the relationship between population growth and real house price growth from 1990 to 2000. Across the regions we can clearly see that the pattern differs a lot.The West shows a slightly positive relationship which means that states with more population growth are likely to have a little bit larger increases in real house prices. The Midwest and Northeast show a very slight positive slopes which means their population growth shows a weaker impact on house prices in both regions. The South on the other hand shows a moderately negative slope so higher population growth did not lead to an increase in real house prices. Overall, the strength of the relationship is weak in many regions and varies by region.
+
+
+
+
+
+
+```{r,echo = FALSE, message=FALSE}
+
+ggplot(MM, aes(x = diff_00_10, y = HPI_change_00_10, color = Region)) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", se = FALSE) + scale_color_manual(values = cb_palette)+
+  labs(title = "Figure 5:Population vs Real House Price Change (2000–2010)",
+       x = "% Population Change", y = "% Real HPI Change")
+
+```
+
+## Population Growth and House Price Changes by Region (2000–2010)
+
+Figure 5 shows the relationship between population growth and real house price growth from 2000 to 2010. In this period of time, the West shows a strong negative slope which means that states with a faster population growth experienced the largest price drop during the 2008's housing crash. The South region shows a slightly negative relationship which means that the population grew but the prices almost stayed the same or fell down a little bit. The Northeast also shows a slightly negative slope, which means states with lower population growth had the lowest price declines during the housing crash. The Midwest region is the only region that shows a positive relationship, showing that states with higher population growth saw slightly higher house price increases. Overall, the relationship between population growth and house price change from 2000 to 2010 is mostly negative. 
+
+
+```{r,echo = FALSE, message = FALSE}
+ggplot(MM, aes(x = diff_10_19, y = HPI_change_10_19, color = Region)) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", se = FALSE) + scale_color_manual(values = cb_palette)+
+  labs(title = "Figure 6:Population vs Real House Price Change (2010–2019)",
+       x = "% Population Change", y = "% Real HPI Change")
+```
+
+
+## Population Growth and House Price Changes by Region (2010–2019)
+
+Figure 6 shows the relationship between population growth and real house price growth from 2010 to 2019. In this period of time, all regions show a strong positive pattern. The West shows the strongest positive relationship, which means states with higher population growth saw the largest increase in house prices. The South also shows a strong positive relationship which means that states with faster population growth experiencing a higher increase in house prices. The Northeast has a moderate positive slope.The Midwest has a small positive slope which means that population growth had a weak effect there.
+
+
+
+
+
+## Conclusion
+
+Overall, the analysis shows that population growth has a strong impact on how house prices change over time and across the regions. In most years between 1975 and 2019, we can see that states with a fast-growing and denser population tend to have higher increases in house prices overall. This makes sense because when more people move to a certain state, the number of houses stays the same and the demand increases, which pushes the prices up. 
+
+At the same time, the impact of population was not the same across the regions and periods of time. Some regions, like the Midwest, show a really weak correlation between population growth and house price increases. While other regions like the West show a very strong relationship. 
+
+However, the period of time from 2000 to 2010 shows an exception. During the 2008 housing crash, the fast-growing population states experienced the largest price drops. This explains that population growth cannot guarantee the stability and the growth in house prices in a certain region. 
+
+Overall, we can conclude that population growth is associated with rising house prices in the long run. But the relationship does not tell the whole story. In normal conditions, a state with a higher population tends to have higher house prices. However, during an economic crisis, house prices can drop significantly no matter how the population grows in a state.  
+
+
