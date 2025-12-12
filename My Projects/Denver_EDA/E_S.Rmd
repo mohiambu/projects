@@ -1,0 +1,33 @@
+---
+title: "Executive Summary"
+output:
+  pdf_document: default
+  html_document: default
+date: "2025-12-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+## Executive Summary
+
+The project studies how location affects Airbnb prices in Denver. At first, the southeastern part of Denver appeared to be the most expensive area in Denver.Moreover, the maps and summaries showed the neighborhoods like Washington Park, University Park and Cherry Creek are very expensive. However, the southeastern area has larger houses and apartments on average. The question was, does the southeast look more expensive because of the larger listings that raise the average up? or it has the strongest location premium. To answer this question we separated the location from other features, we used two Generalized Additive Models (GAMs). 
+
+* GAM model 1 (Location-Only GAM):  the first model used only location to predict Airbnb listing prices, and the results showed that the southeast is the most expensive area in Denver and the downtown area appeared less expensive.
+
+* GAM model 2 (Full GAM): the second model added additional features besides location, including number of bedrooms, how many guests a property can host, room type, and review scores. The results of this GAM model showed that Downtown Denver has the most expensive location value, and the southeast properties appeared to be cheaper than the first model. 
+
+The second model allows us to compare listings in a fairer way because it fixes other features as constant. When we did this, the results changed completely. Now the southeast is no longer the most expensive area, and Downtown showed the highest predicted nightly prices. This shows that Downtown Denver has the highest location value. The southeast looked more expensive at first because it has larger houses on average, which pushes the average prices up. 
+
+Overall, the location appeared to have a strong effect on the listing's nightly prices, and using simple averages can be misleading. So, to understand the true location value of an Airbnb listing, we should consider models that fix other features like size and compare identical listings. 
+
+
+
+
+
+
+
