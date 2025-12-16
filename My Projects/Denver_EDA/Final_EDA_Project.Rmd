@@ -1,0 +1,416 @@
+---
+title: "Airbnb Pricing Patterns in Denver"
+output:
+  pdf_document: default
+  html_document: default
+date: "2025-12-14"
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(maps)
+library(mgcv)
+library(dplyr)
+library(viridis)
+library(broom)
+library(ggrepel)
+library(knitr)
+```
+
+
+
+## Abstract Introduction
+
+
+Airbnb prices vary a lot across Denver. In this project, we ask whether the southeast area has higher nightly prices across Denver because of location or whether it looks expensive just because the area has larger properties on average. We used a public dataset from InsideAirbnb and fitted two GAM models. The first model predicts prices based on location only, and the second one adds some additional features such as number of bedrooms, number of guests the listing can host, room type and review scores. The first GAM model makes the southeast the most expensive area in Denver. However, when we add the other features, the Downtown area becomes the most expensive part of Denver. This shows that Downtown Denver has the strongest location value, and whenever we want to make decisions, we should not rely on basic average prices alone. 
+
+
+## Goals of the Analysis
+
+The goal of this project is to understand how location influences Airbnb prices in Denver. specifically,we want to know whether the southeastern neighborhoods have higher prices on average because of location or whether the area is expensive because it has larger houses/apartments on average. To answer this, we fitted two GAM models, one that predicts prices on location only and another one that has some additional features. Comparing both models helps us separate the location effects from other listing features. This will give us a better understanding of which area in Denver has the strongest location premium. In this project, we used GAM models because prices are changing unevenly across locations. We chose the GAM models specifically because they are good at capturing curved, uneven and non-linear patterns.This helps us understand how prices change across the city.
+
+
+## Data Description
+
+The dataset for this project comes from InsideAirbnb, which is an open-source database that provides public Airbnb listing data for many cities, including Denver. Each row from the dataset represents an Airbnb listing with other information, including price, location and other listing features. 
+The dataset includes all Denver's Airbnb listings available when the dataset was downloaded from InsideAirbnb (not just a sample).The key variables of this data set are:
+
+* price_clean: the price of the listing per night (cleaned and converted to numerical values).
+
+* longitude and latitude: the geographic location of each listing.
+
+* bedrooms: number of bedrooms in the listing.
+
+* accommodates: the maximum number of guests the listing can host. 
+
+* room_type: whether the listing is an entire home/apt, private room, hotel room or shared room.
+
+* review_scores_rating: average review score given by guests. 
+
+To prepare the data, we cleaned the price column by removing the dollar sign and converting it to a numerical value. Also, we dropped the rows that had missing values in the key variables. Moreover, we created simple average summaries, like average price per neighborhood to understand the data before fitting the GAM models. 
+
+```{r,echo=FALSE,message=FALSE, warning=FALSE}
+Denver <-  read.csv("listings.csv")
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Denver_clean <- Denver  |> separate(price,into = c("dollar", "price_clean"), sep = 1) |> select(-dollar)
+Denver_clean <- Denver_clean |> mutate(price_clean = as.numeric(price_clean))  |>
+  dplyr::filter(!is.na(price_clean)) 
+```
+
+
+```{r, echo=FALSE,message=FALSE, warning=FALSE}
+price_by_room <- Denver_clean |>
+  filter(!is.na(room_type)) |>
+  summarise(mean_price = mean(price_clean),.by = room_type)
+```
+
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+Denver_clean1 <- Denver_clean
+```
+
+## Distribution of Airbnb Listings in Denver
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+denver_map <- map_data("county") |>
+  filter(region == "colorado", subregion == "denver")
+
+ggplot(Denver_clean, aes(x = longitude, y = latitude, color = price_clean)) +
+  geom_point(alpha = 0.6, size = 1) +geom_polygon(data = denver_map,aes(x = long, y = lat, group = group),fill = NA,color = "black",linewidth = 1)+scale_color_viridis_c(name = "Price ($)") + geom_point(data = data.frame(longitude = -104.9903, latitude = 39.7392),aes(x = longitude, y = latitude),color = "red",fill = NA,size = 3)+
+  labs(title = "Figure 1:Distribution of Airbnb Listings in Denver",x = "Longitude",y = "Latitude") + theme_light() 
+```
+
+Figure 1 above shows the distribution of Airbnb listings across Denver. We can see that most of the listings are concentrated around Downtown Denver, which is marked by the red point. Downtown Denver has the highest density of listings but there is also a cluster of listings in the northwest, and whenever we move farther from these areas, the number of listings becomes smaller. The color scale explains the differences in prices, and both cheap and expensive listings appear to be spread across the city. Overall, this map shows a basic distribution of Airbnb listings across Denver.
+
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+neigh_price <- Denver_clean |>
+  filter(!is.na(neighbourhood_cleansed), price_clean > 0) |>
+  group_by(neighbourhood_cleansed) |> 
+  summarise(mean_price = mean(price_clean))
+
+neigh_price <- neigh_price[order(neigh_price$mean_price, decreasing = TRUE),][1:8,]
+```
+
+## Denver's Most Expensive Neighborhoods
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(neigh_price, aes(x = reorder(neighbourhood_cleansed, mean_price),y = mean_price)) +
+  geom_col(fill = "steelblue") +coord_flip() +labs(title = "Figure 2:Top 8 Most Expensive Neighbourhoods in Denver",x = "Neighbourhood",y = "Mean Nightly Price (USD)") +
+  theme(plot.title = element_text(hjust = 0, size = 12),axis.text = element_text(size = 10))
+```
+
+Figure 2 shows the top eight neighborhoods in Denver with the highest average Airbnb prices. We can see that the University Park is the most expensive, with average prices exceeding 300$ per night. Cherry Creek and Belcaro follow next, as both of these neighbourhoods offer high quality housing and strong amenity access. Most of the remaining neighbourhoods, like Civic Center and Union Station, have average housing prices between 200$ and 250$. From this figure, we can see that some neighborhoods have a higher average nightly price likely due to factors such as location, high-quality housing, stronger amenities and property size. 
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+
+neigh_pts <- data.frame(longitude = c(-104.9508228, -104.9476466, -104.948616, -104.9222363,
+-104.9877439, -104.9988948, -104.970284, -104.965202),latitude = c(39.6748338, 39.7206887, 39.703285, 39.7177608,39.738181, 39.752156, 39.719505, 39.698399))
+
+neigh_pts$neighborhood <- c("University Park $311","Cherry Creek $267","Belcaro $256","Hilltop $238","Civic Center $217","Union Station $207","Country Club $207","Washington Park $205")
+
+#neigh_pts$id <- 1:nrow(neigh_pts)  #label them with numbers instead of name
+
+ggplot() + geom_polygon(data = denver_map,aes(x = long, y = lat, group = group),fill = NA, color = "black", linewidth = 0.2) +geom_point(data = neigh_pts,aes(x = longitude, y = latitude),
+color = "red", size = 2) +
+  geom_text_repel(data = neigh_pts,aes(x = longitude, y = latitude, label = neighborhood),size = 2.65,
+  box.padding = 0.7,max.overlaps = Inf, color = "blue")+
+  labs(title = " Figure 3: Top 8 Most Expensive Neighborhoods in Denver (Average Price)",x = "Longitude",y = "Latitude") +theme_void() 
+
+```
+
+The map above (Figure 3) shows where the top 8 most expensive neighborhoods are located within Denver. Each red point represents each neighborhood's approximate location. Most of the expensive neighborhoods are located in the southeast, which includes areas like University park, Washington Park and Cherry Creek. Other expensive neighborhoods are located in the downtown area, such as Civic Center and Union Station.Denver boundaries show that these neighborhoods are located within the core of Denver rather than the edges.This pattern shows that location has a strong effect on average nightly prices because neighborhoods that are located in the center usually have better access to amenities and transportation. This shows that location can influence Airbnb prices. However, we need more analysis beyond the average nightly prices to confirm how location affects Airbnb prices.
+
+
+
+
+## Interpretation of Median Bedrooms by Neighborhood
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+neigh <- c("Union Station", "Civic Center","University Park", "Cherry Creek", "Belcaro",
+           "Hilltop","Country Club", "Washington Park") 
+avg_size_tbl <- Denver_clean1 |>dplyr::filter(neighbourhood_cleansed %in% neigh) |>
+  dplyr::group_by(neighbourhood_cleansed) |>dplyr::summarise("Median Bedrooms" = median(bedrooms, na.rm = TRUE),
+                                                             .groups = "drop") |>
+  dplyr::mutate(neighbourhood_cleansed = factor(neighbourhood_cleansed, levels = neigh)) |>
+  dplyr::arrange(neighbourhood_cleansed) |>dplyr::rename(Neighborhood = neighbourhood_cleansed)
+avg_size_tbl$Area <- c("Downtown","Downtown","Southeast","Southeast","Southeast","Southeast", "Southeast","Southeast")
+```
+
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+knitr::kable(avg_size_tbl,digits = 2,caption = "Median Bedrooms by Neighborhood") |> kableExtra::kable_styling(full_width = FALSE)
+```
+
+
+
+Table 1 shows that the Downtown area has smaller listings than the southeast, with a median of 1 bedroom. While the southeast has larger listings on average, with a median of 2-3 bedrooms. Since larger listings usually cost more per night, these size differences mean that simple average prices can be misleading. Some neighborhoods may look more expensive just because they have bigger listings, not necessarily because the location itself is more valuable. This is why we need models that control for size when comparing locations.
+
+
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+Denver_clean1 <- Denver_clean
+```
+
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+gam_model1 <- gam(log(price_clean) ~ s(longitude, latitude) ,data = Denver_clean1 ,method = "REML")
+```
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+
+grid_df1 <- expand.grid(longitude = seq(-105.12,-104.59,length.out = 300),latitude  = seq(39.6100,39.9200,length.out = 300))
+
+grid_df1$pred_price <- exp(predict(gam_model1, newdata = grid_df1))
+
+```
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+denver_map <- map_data("county") |>
+  filter(region == "colorado", subregion == "denver")
+```
+
+
+
+
+## Interpretation of the Location-Only GAM Model
+
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+ggplot() +
+  geom_contour_filled(data = grid_df1,aes(x = longitude, y = latitude, z = pred_price),bins = 10)+ 
+  geom_polygon(data = denver_map,aes(x = long, y = lat, group = group),fill =
+                 NA,color="black",linewidth = 1) +
+  scale_fill_viridis_d(name = "Predicted Price ($)") + geom_point(data = data.frame(longitude = -104.9910,latitude = 39.7510),aes(x = longitude, y = latitude),color = "red", size = 1)+
+  geom_point(data = data.frame(longitude = -104.9527,latitude = 39.7090),aes(x = longitude, y = latitude),color = "#000000", size = 1)+ 
+  labs(x = "Longitude",y = "Latitude",title = "GAM Model 1: Predicted Airbnb Prices in Denver Using Location Only")
+```
+
+The plot (GAM Model 1) shows how the GAM Model predicts Airbnb prices using location only. The colors represent different price levels. The red point marks the Downtown area, and the black point marks the southeastern neighborhoods which include neighborhoods like Washington Park, University Park and Cherry Creek. The model shows that Downtown Denver near the red point is expensive, but it's not Denver's most expensive area. The model shows that the highest predicted prices are located in the southeastern neighborhoods near the black point, and this is likely because this area is:
+
+1. Apartments and houses are much larger on average, which pulls the average up. 
+
+2. Close to the University of Denver (parents visiting their students)
+
+3. Quiet, safe and residential
+
+4. Close to Cherry Creek (luxurious commercial area of Denver)
+
+5. Surrounded by beautiful mountains. 
+
+ 
+Note: Predictions outside the Denver city boundary should be ignored, as the model is only interpreted within the study area.
+
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+library(mgcv)
+
+gam_model2 <- gam(log(price_clean) ~ log(accommodates) + bedrooms + review_scores_rating + room_type + review_scores_rating + s(longitude,latitude) ,data = Denver_clean1,method = "REML")
+
+```
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+newdata <- data.frame(accommodates = 5,bedrooms = 3,room_type = "Hotel room",
+                      review_scores_rating = 5,longitude = -106,latitude = 39.70)
+
+#exp(predict(gam_model2, newdata))  
+```
+
+
+
+## Interpretation of the Second GAM Model (With Added Features)
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+grid_df2 <- grid_df1 |> mutate(accommodates = median(Denver_clean1$accommodates, na.rm = TRUE),
+  bedrooms= median(Denver_clean1$bedrooms, na.rm = TRUE),
+  review_scores_rating = median(Denver_clean1$review_scores_rating,na.rm = TRUE),
+  room_type= "Entire home/apt")
+
+grid_df2 <- grid_df2 |>mutate(pred_price_logged = predict(gam_model2, newdata = grid_df2),
+                            pred_price = exp(pred_price_logged))
+ggplot()+
+  geom_contour_filled(data = grid_df2,aes(x = longitude, y = latitude, z = pred_price),bins = 10) +
+  geom_polygon(data = denver_map,aes(x = long, y = lat, group = group),fill = NA,color = "black",
+               linewidth = 1) + scale_fill_viridis_d(name = "Predicted Price ($)") +
+  geom_point(data = data.frame(longitude = -104.9910,latitude = 39.7510),aes(x = longitude, y =
+  latitude),color = "red", size = 1)+geom_point(data = data.frame(longitude = -104.9527,latitude = 39.7090),aes(x = longitude, y = latitude),color = "black", size = 1)+labs(
+                 title = "Predicted Airbnb Prices After Controlling for Additional Features", x = "Longitude",y = "Latitude")
+```
+
+The plot above shows the predicted Airbnb prices after adding more variables to the GAM model, including the number of bedrooms,number of guests allowed,room type and review score. The red point marks the downtown, and the black point marks the southeastern area.
+
+In the first model (GAM Model 1),the southeast area showed the most expensive part of Denver. This is because the model was using the location only. The model noticed that the southeastern area has larger listings on average. Since larger listings are usually more expensive on Airbnb, the model assumed that the entire southeastern area is expensive. 
+
+However,once we add other features like number of bedrooms and room type, the model predicts differently. The GAM Model 2 compares the prices of listings with the same type of features. With this fair comparison, the model shows:
+
+- Downtown Denver becomes the most expensive location for a typical Airbnb listing.
+
+- The red point that marks the Downtown area is inside the brightest yellow area showing the highest predicted price.
+
+- This means a median-sized apartment (with the same number of bedrooms, the same accommodations and the same room type) is worth more in downtown than in Washington Park or University Park.This is because the Downtown Area has:
+
+    1. High demand from tourists and business travelers
+
+    2. Strong walkability and better transportation options
+
+    3. More things to do within walking distance
+
+In summary, these results answer our main question: the southeastern area is not expensive because the area has the most valuable location premium. The southeast appeared more expensive in the location-only model because the area has larger listings on average. So once we compare the the same listings, we can see clearly that Downtown Denver has the most valuable location.  
+
+
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+grid_df1$pred1 <- exp(predict(gam_model1, newdata = grid_df1))
+
+```
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+grid_df1 <- grid_df1 |>mutate(accommodates = median(Denver_clean1$accommodates, na.rm = TRUE),
+                              bedrooms = median(Denver_clean1$bedrooms, na.rm = TRUE),
+                              review_scores_rating = median(Denver_clean1$review_scores_rating, na.rm = TRUE),room_type = "Entire home/apt")
+grid_df1$pred2 <- exp(predict(gam_model2, newdata = grid_df1))
+```
+
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+grid_df1$diff <- grid_df1$pred1 - grid_df1$pred2
+```
+
+
+## Interpretation of the Difference Map (Full GAM - Location-Only GAM)
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+binz <- c(-80, -40, -20, -10, -5, 0, 5, 10, 20, 40, 80)
+Colz <- c("#08306B","#2171B5","#6BAED6","#C6DBEF","#F7FBFF","#FFF5F0","#FCBBA1","#FB6A4A",
+          "#CB181D","#67000D")
+ggplot() + geom_contour_filled(data = grid_df1,aes(x = longitude, y = latitude, z = diff),
+                               breaks = binz) +geom_polygon(data = denver_map,aes(x = long, y = lat, group = group),fill = NA, color = "black", linewidth = 1) +scale_fill_manual(
+    name = "Difference $",values = Colz) +
+  geom_point(data = data.frame(longitude = -104.9910,latitude = 39.7510),aes(x = longitude, y =
+  latitude),color = "red", size = 2)+geom_point(data = data.frame(longitude = -104.9527,latitude = 39.7090),aes(x = longitude, y = latitude),color = "black", size = 2)+
+  labs(title = "Difference Map: Full GAM vs Location-Only GAM",x = "Longitude", y = "Latitude")
+```
+
+
+The map plot above shows the difference between the full GAM model (GAM Model 2) and the location-only GAM model (GAM Model 1). The colors tell us: 
+
+* Blue color: The full GAM model predicts higher prices than the location-only model.
+
+* Red color: The location-only GAM model predicts higher prices than the full GAM model.
+
+* White color: both full and location-only models predict similar prices.
+
+The red point marks the Downtown area, and the black point marks the southeast area, including Washington Park, University Park and Cherry Creek. From the map we can see:
+
+* The Downtown area is mostly blue, which means that the model predicts higher prices once we control for features like the number of bedrooms, room type, etc. However, when we compare identical listings, the Downtown area becomes the most expensive because of its strong location premium.  
+
+* The southeastern area is mostly red, which means the location-only model predicts higher prices than the full GAM and this is because the location-only model sees that the area has bigger houses on average, which pushes the average prices up. However, when we add the features to the full GAM model, the model is no longer assuming that the area is expensive. 
+
+In other words, red areas show where the location-only model overestimated prices because it confuses big houses with expensive locations. On the other hand, blue areas show where the full GAM model adjusts prices after comparing identical listings.Overall, These results are useful in real life. If we only look at the average nightly prices, we might think that the southeast is the most expensive area in Denver. However, our model shows that the southeast has the highest average nightly prices only because the area has larger houses on average and the downtown area has the most valuable location in Denver. For Airbnb hosts, this means that small or medium listings are worth more in Downtown Denver than in the southeast area. Overall, the results show us that we should separate the effects of location and home features before making decisions based on simple averages.
+
+Note: The model worked much better when we added more features. The full GAM had an R-squared of 0.58, which means the model explains about 58% of the differences in prices. However, the location-only model had only 0.08, which means that it explains only 8% of the variation (see Appendix for details).
+
+
+
+
+
+# Conclusions
+
+The project shows that the southeast of Denver looks expensive because the listings in that area are larger. When we fitted a GAM model based on location only, the southeast appeared to be the most expensive area in Denver. However, when we add other features like bedrooms, accommodations, room type, and reviews, the results change. After adding the features to the second GAM model, the results show that downtown is the most expensive area in Denver. This means that the exact same listing is worth more downtown than in the southeast. The southeast is expensive only because the area has larger listings on average, not because it has the best location value. Overall, we should not rely on simple averages to decide whether a certain area is more expensive than the other.
+
+
+
+# Limitations and Future Work
+
+The project has some limitations; when we fitted the models, we only used features like number of bedrooms, number of guests the listing can host, room type and review scores. There are some important factors that are not included in the models, such as the area of the property, the year the property was built and how much the property is worth in the market. Also, we didn't account for how prices change during the seasons. Airbnb prices usually are more expensive during peak periods like holidays or during summer.
+
+In the future, we can add additional features to our models, such as the number of bathrooms, the year of build, the area of the property and transportation accessibility. These features will help us understand how prices vary from place to place in the city. Also, it would be useful if we studied how the prices change over seasons to see whether some neighborhoods become more expensive during a specific season or not. 
+
+
+
+
+\pagebreak
+
+
+## Appendix A: EXPLORATORY DATA ANALYSIS
+
+
+```{r,echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+ggplot(Denver_clean, aes(x = room_type, y = price_clean, color = room_type)) +geom_jitter(width = 0.3, alpha = 0.4) +labs(x = "Room Type",y = "Nightly Price",title = "Listing Prices by Room Type")
+
+```
+
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(Denver_clean,aes(x = accommodates,y = price_clean)) + geom_jitter(height = 0, width = 0.3, alpha = 0.5) + geom_point() + geom_smooth(method = "loess", se = FALSE)+ labs(x = "Accommodates",y =" price",title = "Price by Number of Guests")
+```
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+df <- Denver_clean1[,c("bedrooms", "accommodates", "bathrooms","review_scores_rating", "price_clean")]
+df$log_price <- log(df$price_clean)
+corr <- cor(df,use = "complete.obs")
+corr_df <- as.data.frame(as.table(corr))
+ggplot(corr_df,aes(Var1,Var2, fill = Freq)) +
+  geom_tile(color = "black") +
+  geom_text(aes(label = round(Freq,2)),size = 4,color = "black") +
+  scale_fill_gradient2(high = "blue") +
+  labs(title = "Correlation Heatmap", x = "", y = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
+
+```{r,echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+Denver_box <- Denver_clean1 |> dplyr::filter(!is.na(bedrooms)) 
+ggplot(Denver_box, aes(x = factor(bedrooms), y = price_clean)) +
+  geom_boxplot(fill = "grey") +
+  labs(title = "Price by Number of Bedrooms", x = "Bedrooms", y = "Price ($)")
+```
+
+
+## Appendix B: MODEL RESULTS AND DIAGNOSTICS
+
+
+
+### Summary of Model 1:
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+summary(gam_model1)
+```
+
+### Summary of Model 2:
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+summary(gam_model2)
+```
+
+
+## Residuals Plot of Location-Only GAM
+```{r,,echo=FALSE, message=FALSE, warning=FALSE}
+Denver_clean1$residuals1 <- residuals(gam_model1)
+Denver_clean1$fitted1 <- fitted(gam_model1)
+ggplot(Denver_clean1, aes(x = fitted1, y = residuals1)) +
+geom_point() + geom_smooth(method = "lm") +
+labs(title = "Residuals vs Fitted Values (GAM Model 1)",x = "Fitted log(price)",y = "Residuals")
+```
+
+
+## Residuals Plot of Full GAM
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+aug2 <- augment(gam_model2, data = Denver_clean1)
+ggplot(aug2, aes(x = .fitted, y = .resid)) +geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Residuals vs Fitted Values (GAM Model 2)",x = "Fitted log(price)",y = "Residuals")
+```
+
+
+
+
